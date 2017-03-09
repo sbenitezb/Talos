@@ -113,6 +113,7 @@
       (:title "Taλos")
       (:meta :http-equiv "content-type" :content "text/html;charset=UTF-8")
       (:meta :http-equiv "X-UA-Compatible" :content "IE=edge,chrome=1")
+      (:meta :http-equiv "refresh" :content "10")
       (:link :rel "stylesheet" :type "text/css" :href "/static/talos.css"))
      (:body
       (:ul :id "header"

@@ -1,0 +1,1 @@
+wx86cl64.exe -l run.lisp

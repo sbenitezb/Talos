@@ -2,15 +2,16 @@
 
 (asdf:defsystem #:talos
   :serial t
-  :description "Describe talos here"
+  :description "Control de reparación de clientes ConfigMgr"
   :author "Sebastián Benítez <sebenitez@trabajo.gob.ar>"
   :license "MIT"
   :depends-on (#:hunchentoot
                #:cl-who
+               #:cl-log
+               #:cl-fad
                #:postmodern
                #:uri-template
                #:cl-interpol
-               #:parenscript
                #:cl-ppcre
                #:cl-json
                #:cl-utilities)
