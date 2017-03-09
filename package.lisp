@@ -8,7 +8,8 @@
         #:cl-fad
         #:cl-interpol
         #:cl-utilities
-        #:uri-template)
+        #:uri-template
+        #:cffi)
   (:shadowing-import-from #:cl-fad #:copy-stream #:copy-file)
   (:export #:main
            #:stop-server

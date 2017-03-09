@@ -14,7 +14,8 @@
                #:cl-interpol
                #:cl-ppcre
                #:cl-json
-               #:cl-utilities)
+               #:cl-utilities
+               #:cffi)
   :components ((:file "package")
                (:file "macros")
                (:file "config")
@@ -22,5 +23,6 @@
                (:file "auth")
                (:file "pagegen")
                (:file "handlers")
+               (:file "icmp")
                (:file "talos")))
 
