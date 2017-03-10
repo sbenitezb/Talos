@@ -1,36 +1,36 @@
 (in-package #:talos)
 
-(defctype bool :int)
-(defctype word :unsigned-short)
-(defctype dword :unsigned-long)
-(defctype handle :pointer)
-(defctype ipaddr :unsigned-long)
+(cffi:defctype bool :int)
+(cffi:defctype word :unsigned-short)
+(cffi:defctype dword :unsigned-long)
+(cffi:defctype handle :pointer)
+(cffi:defctype ipaddr :unsigned-long)
 
-(defcstruct c-ip-option-information32
+(cffi:defcstruct c-ip-option-information32
   (ttl :unsigned-char)
   (tos :unsigned-char)
   (flags :unsigned-char)
   (options-size :unsigned-char)
   (data :pointer))
 
-(defcstruct c-icmp-echo-reply32
+(cffi:defcstruct c-icmp-echo-reply32
   (ipaddr ipaddr)
   (status :unsigned-long)
   (roundtrip-time :unsigned-long)
   (data-size :unsigned-short)
   (reserved :unsigned-short)
   (data :pointer)
-  (options c-ip-option-information32))
+  (options (:struct c-ip-option-information32)))
 
-(define-foreign-library iphlpapi
-  (:win32 "iphlpapi.dll"))
+(cffi:define-foreign-library iphlpapi
+  (:windows "iphlpapi.dll"))
 
-(use-foreign-library iphlpapi)
+(cffi:use-foreign-library iphlpapi)
 
-(defcfun ("IcmpCreateFile" c-icmp-create-file) handle)
-(defcfun ("IcmpCloseHandle" c-icmp-close-handle) bool
+(cffi:defcfun ("IcmpCreateFile" c-icmp-create-file) handle)
+(cffi:defcfun ("IcmpCloseHandle" c-icmp-close-handle) bool
   (handle handle))
-(defcfun ("IcmpSendEcho" c-icmp-send-echo) dword
+(cffi:defcfun ("IcmpSendEcho" c-icmp-send-echo) dword
   (handle handle)
   (destination-address ipaddr)
   (req-data :pointer)
@@ -40,12 +40,29 @@
   (reply-size dword)
   (timeout dword))
 
-(defun ping (hostname &optional (timeout 2500))
-  (let* ((handle (c-icmp-create-file))
-         (addr (resolve hostname)))
-    (with-foreign-string ((data data-size) "ICMP Ping")
-      (c-icmp-send-echo handle addr data data-size nil))
-    (c-icmp-close-handle handle)))
+(defun ping (hostname &optional (timeout 1000))
+  (declare (ignorable timeout))
+  (if-let (addr (resolve hostname))
+    (let ((handle (c-icmp-create-file))
+          (buffer-size (cffi:foreign-type-size '(:struct c-icmp-echo-reply32)))
+          (status :error))
+      (cffi:with-foreign-string ((data data-size) "ICMP Ping -- 12345678")
+        (cffi:with-foreign-pointer (buffer (+ buffer-size data-size))
+          (c-icmp-send-echo handle addr data data-size (cffi:null-pointer)
+                            buffer (+ buffer-size data-size) timeout)
+          (setf status (translate-icmp-status buffer))))
+      (c-icmp-close-handle handle)
+      status)))
+
+(defun translate-icmp-status (buffer)
+  (cffi:with-foreign-slots ((status) buffer (:struct c-icmp-echo-reply32))
+    (case status
+      (0 :success)
+      (11002 :unreachable)
+      (11003 :unreachable)
+      (11005 :blocked)
+      (11010 :timeout)
+      (otherwise :error))))
 
 (defun resolve (hostname)
   #+ccl
