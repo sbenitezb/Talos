@@ -14,7 +14,7 @@
                #:cl-interpol
                #:cl-ppcre
                #:cl-json
-               #:cl-utilities
+               #:alexandria
                #:cffi)
   :components ((:file "package")
                (:file "macros")

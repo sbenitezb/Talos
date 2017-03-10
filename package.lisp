@@ -7,9 +7,8 @@
         #:cl-log
         #:cl-fad
         #:cl-interpol
-        #:cl-utilities
-        #:uri-template
-        #:cffi)
+        #:alexandria
+        #:uri-template)
   (:shadowing-import-from #:cl-fad #:copy-stream #:copy-file)
   (:export #:main
            #:stop-server
