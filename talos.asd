@@ -24,5 +24,6 @@
                (:file "pagegen")
                (:file "handlers")
                (:file "icmp")
+               (:file "fixer")
                (:file "talos")))
 

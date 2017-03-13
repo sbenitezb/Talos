@@ -1,6 +1,7 @@
 (in-package #:talos)
 
 (defvar +app-folder+ (make-pathname :directory '(:relative "talos")))
+(defvar +bin-folder+ (make-pathname :directory '(:relative "bin")))
 (defvar +cfg-spec+ (make-pathname :name :wild :type "cfg"))
 
 (defclass config ()
@@ -26,6 +27,8 @@
    (launch-mode
     :accessor config-launch-mode
     :initform :production)
+   (program-dir
+    :accessor config-program-dir)
    (docbase
     :accessor config-docbase
     :initform "./static/")
@@ -36,8 +39,12 @@
 (defvar *talos-config* (make-instance 'config))
 
 (defun private-folder ()
-  (merge-pathnames (merge-pathnames-as-directory (user-homedir-pathname) +app-folder+)))
-  
+  (merge-pathnames-as-directory (user-homedir-pathname) +app-folder+))
+
+(defun bin-folder ()
+  (let ((program-folder (merge-pathnames (config-program-dir *talos-config*))))
+    (merge-pathnames-as-directory program-folder +bin-folder+)))
+
 (defun read-config-file (filespec)
   "Lee el archivo de configuración desde la ruta FILESPEC y reemplaza
 la configuración global de la variable *TALOS-CONFIG*."
