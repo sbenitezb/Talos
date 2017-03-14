@@ -2,6 +2,8 @@
 
 (in-package #:talos)
 
+(defvar *fix-manager*)
+
 ;;; "talos" goes here. Hacks and glory await!
 
 (defcategory :critical)
@@ -105,7 +107,11 @@ devuelvan siempre un error."
             "/static/"
             (config-docbase *talos-config*))
            *dispatch-table*)
-  (start-server port))
+  (start-server port)
+
+  (setf *fix-manager* (make-instance 'fix-manager
+                                     :fixing-interval (config-fixing-interval *talos-config*)
+                                     :batch-size (config-fixing-batch-size *talos-config*))))
 
 (defun main (&key (port 9090))
   (case (init port)
