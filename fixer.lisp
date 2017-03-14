@@ -28,8 +28,9 @@
          (log-message :info "Procesando ~d lotes de ~d unidades"
                       (length batches) batch-size)
          (mapc #'process-batch batches)))
-     (log-message :info "Esperando próximo intervalo")
-     (sleep (* (fix-manager-fixing-interval manager) 60 60))))
+     (log-message :info "Esperando el próximo intervalo de ~d minutos"
+                  (fix-manager-fixing-interval manager))
+     (sleep (* (fix-manager-fixing-interval manager) 60))))
 
 (defun process-batch (batch)
   (log-message :info "Procesando lote")
