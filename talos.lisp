@@ -11,6 +11,16 @@
 (defcategory :info (or :info :notice))
 (defcategory :debug (or :debug :info))
 
+;;; Configurar el logger para que formatee los mensajes con la fecha ISO.
+(defmethod format-message ((self formatted-message))
+  (multiple-value-bind (second minute hour date month year dow dst-p tz)
+      (decode-universal-time (timestamp-universal-time (message-timestamp self)))
+    (format nil  "~4,'0d-~2,'0d-~2,'0dT~2,'0d:~2,'0d:~2,'0d+~2,'0d:00 ~a ~?~&"
+            year month date hour minute second tz
+            (message-category self)
+            (message-description self)
+            (message-arguments self))))
+
 (defun setup-logger ()
   (setf (log-manager)
         (make-instance 'log-manager :message-class 'formatted-message))
