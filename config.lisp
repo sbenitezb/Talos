@@ -34,7 +34,13 @@
     :initform "./static/")
    (templates-path
     :accessor config-templates-path
-    :initform "./tmpl/")))
+    :initform "./tmpl/")
+   (fixing-interval
+    :accessor config-fixing-interval
+    :initform 30)
+   (fixing-batch-size
+    :accessor config-fixing-batch-size
+    :initform 10)))
 
 (defvar *talos-config* (make-instance 'config))
 
