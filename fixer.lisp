@@ -12,7 +12,7 @@
 (defmethod initialize-instance :after ((manager fix-manager) &key &allow-other-keys)
   (ccl:process-preset (fix-manager-thread manager) #'schedule-client-fixes manager)
   (ccl:process-enable (fix-manager-thread manager) 5)
-  (log-message :info "Iniciando Fix Manager"))
+  (log-message :notice "Iniciando Fix Manager"))
 
 (defun schedule-client-fixes (manager)
   (loop
@@ -33,7 +33,7 @@
      (sleep (* (fix-manager-fixing-interval manager) 60))))
 
 (defun process-batch (batch)
-  (log-message :info "Procesando lote")
+  (log-message :debug "Procesando lote")
   (mapc #'fix-client batch))
 
 (defun fix-client (client)
@@ -49,7 +49,7 @@ el proceso FixCliente en el equipo remoto."
         (let ((pskill (build-exepath "pskill.exe"))
               (psexec (build-exepath "psexec.exe"))
               (fixclient (build-exepath "FixCliente.exe")))
-          (log-message :info "Procesando cliente ~a" name)
+          (log-message :debug "Procesando cliente ~a" name)
           (ccl:run-program pskill (build-params ("cscript.exe")))
           (ccl:run-program pskill (build-params ("FixCliente.exe")))
           (ccl:run-program pskill (build-params ("gpupdate.exe")))

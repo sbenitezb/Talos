@@ -37,13 +37,13 @@
   (setf *default-content-type* "text/html; charset=UTF-8"))
 
 (defun start-server (port)
-  (log-message :info "Iniciando el servicio web")
+  (log-message :notice "Iniciando el servicio web")
   (configure-defaults)
   (setf (html-mode) :html5)
   (setf server (start (make-instance 'easy-acceptor :port port))))
   
 (defun stop-server ()
-  (log-message :info "Deteniendo el servicio web")
+  (log-message :notice "Deteniendo el servicio web")
   (stop server))
 
 (defun config-error-handler (error-message)
@@ -77,7 +77,9 @@ devuelvan siempre un error."
 (defun init (port)
   (ensure-directories-exist (private-folder))
   (setup-logger)
-  (log-message :notice "Talos server")
+  (log-message :notice "Talos server v~a (C) 2011-2017 ~a"
+               (asdf:component-version (asdf:find-system 'talos))
+               (asdf:system-author (asdf:find-system 'talos)))
   (reload-config)
 
   ;; Verificar la conexión con Postgres y configurar.
