@@ -20,7 +20,7 @@
   (with-accessors ((lock fix-manager-lock) (monitors fix-manager-monitors)) manager
     (ccl:with-lock-grabbed (lock)
       (dolist (monitor monitors)
-        (mapc #'ccl:process-kill monitor)
+        (ccl:process-kill monitor)
         (delete monitor monitors)
         (setf monitor nil)))))
 
