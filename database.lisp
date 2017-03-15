@@ -88,3 +88,8 @@ especificadas en SORT."
   "Marca un cliente CLIENT como arreglado en la base."
   (with-database
     (postmodern:query "SELECT mark_fixed($1::varchar)" client)))
+
+(defun mark-obsolete (client)
+  "Marca un cliente CLIENT como dado de baja en la base."
+  (with-database
+    (postmodern:query "SELECT mark_obsolete($1::varchar)" client)))

@@ -50,6 +50,11 @@
 (defun prepare-batch (batch manager)
   (multiple-value-bind (inactive active reachable)
       (filter-batch batch)
+    ;; Excluye clientes inactivos de la base y los agrega en el archivo
+    ;; disabled.txt en la carpeta privada del programa.
+    (when (> (length inactive) 0)
+      (exclude-inactive-clients inactive))
+    
     (when (> (length reachable) 0)
       (process-batch reachable manager))))
 
@@ -128,3 +133,16 @@ el proceso FixCliente en el equipo remoto."
   (with-slots (name) client
     ))
 
+(defun exclude-inactive-clients (clients)
+  ;; Guardar en un archivo la lista de clientes inactivos y remover el
+  ;; cliente de la base.
+  (with-open-file (file (merge-pathnames-as-file (private-folder) "disabled.txt")
+                        :direction :output :if-exists :append
+                        :if-does-not-exist :create)
+    (multiple-value-bind (sec min hour date month year day dlp tz) (get-decoded-time)
+      (log-message :debug "Excluyendo ~d equipos inactivos" (length clients))
+      (dolist (client clients)
+        (with-slots (name) client
+          (format file "~4d-~2,'0d-~2,'0d : ~a~%" year month date name)
+          ;; Actualiza la base dando de baja el equipo
+          (mark-obsolete name))))))
