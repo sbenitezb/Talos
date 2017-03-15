@@ -58,13 +58,14 @@
   (let* ((active (remove-if #'client-disabled-p batch))
          (inactive (set-difference batch active))
          (reachable (remove-if (complement #'client-reachable-p) active)))
+    (log-message :debug "En este lote: ~d inactivos, ~d activos, ~d accesibles"
+                 (length inactive) (length active) (length reachable))
     (values inactive active reachable)))
 
 (defun process-batch (batch manager)
-  (log-message :debug "Procesando lote (~d clientes)" (length batch))
+  (log-message :info "Procesando lote (~d clientes)" (length batch))
   (mapc #'fix-client batch)
-    ;; Monitorea el proceso de reparación en un thread aparte por cada batch
-
+  ;; Monitorea el proceso de reparación en un thread aparte por cada batch
   (with-accessors ((lock fix-manager-lock) (monitors fix-manager-monitors)) manager
     (ccl:with-lock-grabbed (lock)
       (push (ccl:process-run-function 'batch-monitor #'monitor-fixes batch)
