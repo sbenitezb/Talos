@@ -42,24 +42,55 @@
          (log-message :info "Procesando ~d lotes de ~d unidades"
                       (length batches) batch-size)
          ;; Procesar lotes
-         (mapc #'(lambda (b) (process-batch b manager)) batches)))
+         (mapc #'(lambda (b) (prepare-batch b manager)) batches)))
      (log-message :info "Esperando el próximo intervalo de ~d minutos"
                   (fix-manager-fixing-interval manager))
      (sleep (* (fix-manager-fixing-interval manager) 60))))
 
+(defun prepare-batch (batch manager)
+  (multiple-value-bind (inactive active reachable)
+      (filter-batch batch)
+    (when (> (length reachable) 0)
+      (process-batch reachable manager))))
+
+(defun filter-batch (batch)
+  (log-message :debug "Filtrando clientes inactivos o inaccesibles")
+  (let* ((active (remove-if #'client-disabled-p batch))
+         (inactive (set-difference batch active))
+         (reachable (remove-if (complement #'client-reachable-p) active)))
+    (values inactive active reachable)))
+
 (defun process-batch (batch manager)
   (log-message :debug "Procesando lote (~d clientes)" (length batch))
-  (let ((reachable-clients (remove-if (complement #'client-reachable-p) batch)))
-    (mapc #'fix-client reachable-clients)
+  (mapc #'fix-client batch)
     ;; Monitorea el proceso de reparación en un thread aparte por cada batch
-    (with-accessors ((lock fix-manager-lock) (monitors fix-manager-monitors)) manager
-      (ccl:with-lock-grabbed (lock)
-        (push (ccl:process-run-function 'batch-monitor #'monitor-fixes batch)
-              monitors)))))
+
+  (with-accessors ((lock fix-manager-lock) (monitors fix-manager-monitors)) manager
+    (ccl:with-lock-grabbed (lock)
+      (push (ccl:process-run-function 'batch-monitor #'monitor-fixes batch)
+            monitors))))
 
 (defun client-reachable-p (client)
+  "Verifica si el cliente responde al ping"
   (with-slots (name) client
     (eq (ping name) :success)))
+
+(defun client-disabled-p (client)
+  "Verifica si el cliente está inhabilitado en AD"
+  (flet ((dsquery (name)
+           (with-output-to-string (stream)
+             (let ((proc (ccl:run-program "dsquery"
+                                          (list "computer" "-name" (coerce name 'simple-string) "-disabled" "-q")
+                                          :output stream)))
+               (multiple-value-bind (status code)
+                   (ccl:external-process-status proc)
+                 (when (eq status :error)
+                   (log-message :critical "dsquery no está disponible")
+                   (error "dsquery no es un comando válido en esta versión de Windows")))))))
+    (with-slots (name) client
+      ;; Si dsquery no encuentra un equipo con este nombre y deshabilitado, la
+      ;; salida es nula.
+      (> (length (dsquery name)) 0))))
 
 (defun fix-client (client)
   "Mata procesos en ejecución que interfieren con FixCliente y finalmente lanza
@@ -95,3 +126,4 @@ el proceso FixCliente en el equipo remoto."
 (defun monitor-fix (client)
   (with-slots (name) client
     ))
+
