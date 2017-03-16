@@ -48,12 +48,17 @@
      (sleep (* (fix-manager-fixing-interval manager) 60))))
 
 (defun prepare-batch (batch manager)
-  (multiple-value-bind (inactive active reachable)
+  (multiple-value-bind (inactive active reachable unreachable)
       (filter-batch batch)
     ;; Excluye clientes inactivos de la base y los agrega en el archivo
     ;; disabled.txt en la carpeta privada del programa.
     (when (> (length inactive) 0)
       (exclude-inactive-clients inactive))
+
+    ;; Marca en la base los equipos que no resuelven IP o no responden
+    ;; al ping.
+    (when (> (length unreachable) 0)
+      (mark-unreachable-clients unreachable))
     
     (when (> (length reachable) 0)
       (process-batch reachable manager))))
@@ -62,10 +67,11 @@
   (log-message :debug "Filtrando clientes inactivos o inaccesibles")
   (let* ((active (remove-if #'client-disabled-p batch))
          (inactive (set-difference batch active))
-         (reachable (remove-if (complement #'client-reachable-p) active)))
+         (reachable (remove-if (complement #'client-reachable-p) active))
+         (unreachable (set-difference active reachable)))
     (log-message :debug "En este lote: ~d inactivos, ~d activos, ~d accesibles"
                  (length inactive) (length active) (length reachable))
-    (values inactive active reachable)))
+    (values inactive active reachable unreachable)))
 
 (defun process-batch (batch manager)
   (log-message :info "Procesando lote (~d clientes)" (length batch))
@@ -140,9 +146,15 @@ el proceso FixCliente en el equipo remoto."
                         :direction :output :if-exists :append
                         :if-does-not-exist :create)
     (multiple-value-bind (sec min hour date month year day dlp tz) (get-decoded-time)
-      (log-message :debug "Excluyendo ~d equipos inactivos" (length clients))
+      (log-message :debug "Excluyendo ~d clientes inactivos" (length clients))
       (dolist (client clients)
         (with-slots (name) client
           (format file "~4d-~2,'0d-~2,'0d : ~a~%" year month date name)
           ;; Actualiza la base dando de baja el equipo
           (mark-obsolete name))))))
+
+(defun mark-unreachable-clients (clients)
+  (log-message :debug "Marcando ~d clientes como inaccesibles" (length clients))
+  (dolist (client clients)
+    (with-slots (name) client
+      (mark-unreachable name))))

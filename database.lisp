@@ -93,3 +93,8 @@ especificadas en SORT."
   "Marca un cliente CLIENT como dado de baja en la base."
   (with-database
     (postmodern:query "SELECT mark_obsolete($1::varchar)" client)))
+
+(defun mark-unreachable (client)
+  "Marca un cliente CLIENT como inaccesible en la base."
+  (with-database
+    (postmodern:query "SELECT mark_unreachable($1::varchar)" client)))

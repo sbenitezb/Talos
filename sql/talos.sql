@@ -100,8 +100,20 @@ DECLARE
 BEGIN
     SELECT id INTO cid FROM clients WHERE name = client LIMIT 1;
     IF cid IS NOT NULL THEN
-        PERFORM update_client(client, 999::smallint, 'Dado de baja', true);
-        PERFORM insert_fix(client, now());
+        PERFORM update_client(client, 999::smallint, 'Dado de baja', false);
+    ELSE
+        RAISE NOTICE 'El cliente (%) no existe; se ignora el comando.', client;
+    END IF;
+END
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION mark_unreachable(client varchar(24)) RETURNS void AS $$
+DECLARE
+    cid smallint;
+BEGIN
+    SELECT id INTO cid FROM clients WHERE name = client LIMIT 1;
+    IF cid IS NOT NULL THEN
+        PERFORM update_client(client, 1::smallint, 'Inaccesible', false);
     ELSE
         RAISE NOTICE 'El cliente (%) no existe; se ignora el comando.', client;
     END IF;
