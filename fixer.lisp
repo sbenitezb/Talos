@@ -68,7 +68,7 @@
   (let* ((active (remove-if #'client-disabled-p batch))
          (inactive (set-difference batch active))
          (reachable (remove-if (complement #'client-reachable-p) active))
-         (unreachable (set-difference active reachable)))
+         (unreachable (set-difference reachable active)))
     (log-message :debug "En este lote: ~d inactivos, ~d activos, ~d accesibles"
                  (length inactive) (length active) (length reachable))
     (values inactive active reachable unreachable)))
