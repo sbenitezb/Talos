@@ -1,4 +1,4 @@
-;;;; package.lisp
+;;; package.lisp
 
 (defpackage #:talos
   (:use #:cl
@@ -8,6 +8,7 @@
         #:cl-fad
         #:cl-interpol
         #:alexandria
+        #:split-sequence
         #:uri-template)
   (:shadowing-import-from #:cl-fad #:copy-stream #:copy-file)
   (:export #:main

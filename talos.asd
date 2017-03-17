@@ -16,6 +16,7 @@
                #:cl-ppcre
                #:cl-json
                #:alexandria
+               #:split-sequence
                #:cffi)
   :components ((:file "package")
                (:file "macros")
