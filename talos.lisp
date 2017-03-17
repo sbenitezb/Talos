@@ -40,7 +40,7 @@
   (log-message :notice "Iniciando el servicio web")
   (configure-defaults)
   (setf (html-mode) :html5)
-  (setf server (start (make-instance 'easy-acceptor :port port
+  (setf server (start (make-instance 'easy-acceptor :address "127.0.0.1" :port port
                                      :access-log-destination nil))))
   
 (defun stop-server ()
