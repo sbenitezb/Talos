@@ -1,5 +1,7 @@
 (in-package #:talos)
 
+(defvar *initial-wait* 2) ;; Tiempo de espera inicial en minutos
+
 (defclass fix-manager ()
   ((batch-size :initarg :batch-size :reader fix-manager-batch-size)
    (fixing-interval :initarg :fixing-interval :accessor fix-manager-fixing-interval)
@@ -25,6 +27,8 @@
         (setf monitor nil)))))
 
 (defun schedule-client-fixes (manager)
+  (log-message :info "Esperando ~d minutos para comenzar a procesar" *initial-wait*)
+  (sleep (* 60 *initial-wait*))
   (loop
      (let ((monitor-count (length (fix-manager-monitors manager))))
        (when (> monitor-count 0)
