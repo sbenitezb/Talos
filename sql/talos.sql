@@ -119,3 +119,16 @@ BEGIN
     END IF;
 END
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION mark_unrepaired(client varchar(24)) RETURNS void AS $$
+DECLARE
+    cid smallint;
+BEGIN
+    SELECT id INTO cid FROM clients WHERE name = client LIMIT 1;
+    IF cid IS NOT NULL THEN
+        PERFORM update_client(client, 2::smallint, 'No reparado', true);
+    ELSE
+        RAISE NOTICE 'El cliente (%) no existe; se ignora el comando.', client;
+    END IF;
+END
+$$ LANGUAGE plpgsql SECURITY DEFINER;

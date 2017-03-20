@@ -59,16 +59,18 @@
     ;; al ping.
     (when (> (length unreachable) 0)
       (mark-unreachable-clients unreachable))
-    
+
+    ;; Marca en la base los equipos accesibles como no reparados
     (when (> (length reachable) 0)
+      (mark-unrepaired-clients reachable)
       (process-batch reachable manager))))
 
 (defun filter-batch (batch)
   (log-message :debug "Filtrando clientes inactivos o inaccesibles")
   (let* ((active (remove-if #'client-disabled-p batch))
-         (inactive (set-difference batch active))
+         (inactive (remove-if (complement #'client-disabled-p) batch))
          (reachable (remove-if (complement #'client-reachable-p) active))
-         (unreachable (set-difference reachable active)))
+         (unreachable (remove-if #'client-reachable-p active)))
     (log-message :debug "En este lote: ~d inactivos, ~d activos, ~d accesibles"
                  (length inactive) (length active) (length reachable))
     (values inactive active reachable unreachable)))
@@ -158,3 +160,9 @@ el proceso FixCliente en el equipo remoto."
   (dolist (client clients)
     (with-slots (name) client
       (mark-unreachable name))))
+
+(defun mark-unrepaired-clients (clients)
+  (log-message :debug "Marcando ~d clientes como no reparados" (length clients))
+  (dolist (client clients)
+    (with-slots (name) client
+      (mark-unrepaired name))))

@@ -98,3 +98,8 @@ especificadas en SORT."
   "Marca un cliente CLIENT como inaccesible en la base."
   (with-database
     (postmodern:query "SELECT mark_unreachable($1::varchar)" client)))
+
+(defun mark-unrepaired (client)
+  "Marca un cliente CLIENT como no reparado en la base."
+  (with-database
+    (postmodern:query "SELECT mark_unrepaired($1::varchar)" client)))
