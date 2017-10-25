@@ -118,6 +118,6 @@ devuelvan siempre un error."
 
 (defun main (&key (port 9090))
   (case (init port)
-    (:abort (exit 1))
+    (:abort (quit 1))
     (otherwise)))
     

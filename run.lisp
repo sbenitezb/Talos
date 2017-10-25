@@ -1,2 +1,2 @@
-(ql:quickload :talos)
+(ql:quickload :talos :silent t)
 (talos:main)

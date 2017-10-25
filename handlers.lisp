@@ -20,11 +20,11 @@ regular REGEX."
 (define-easy-handler (handle-clients :uri "/clients") (client)
   ;; Redireccionar a la página de información del cliente si el
   ;; campo de búsqueda CLIENT no está vacío y el método es GET,
-  ;; o agregar un nuevo cliente si el método es POST.
+  ;; o agregar un nuevo cliente a la cola si el método es POST.
   (unless (null client)
     (case (request-method*)
       (:get (redirect #u/clients/{client}))
-      (:post (add-client (escape-for-html client))
+      (:post (append-to-queue (escape-for-html client) *fix-manager*)
              (redirect #u/clients))))
   
   ;; Mostrar una lista con el estado de los clientes que faltan reparar.
@@ -61,6 +61,16 @@ regular REGEX."
                       :default-request-type :get) ()
   (let ((client (first (split-sequence #\/ (script-name*) :count 2 :from-end t))))
     (mark-fixed client)
+    (redirect #u/clients)))
+
+;;; Define un handler que maneja solicitudes para marcar un cliente
+;;; como obsoleto.
+(define-easy-handler (handle-mark-obsolete
+                      :uri #'(lambda (req)
+                               (req-match "^/clients/.+/mark-obsolete$" req))
+                      :default-request-type :get) ()
+  (let ((client (first (split-sequence #\/ (script-name*) :count 2 :from-end t))))
+    (mark-obsolete client)
     (redirect #u/clients)))
 
 ;;; Define un handler para la ruta que genera estadísticas.
