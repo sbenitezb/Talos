@@ -169,17 +169,14 @@ el proceso FixCliente en el equipo remoto."
   (let ((monitored batch))
     (log-message :debug "Monitoreando reparación del lote")
     (loop
-       (if (> (length monitored) 0)
-           (progn
-             (dolist (client batch)
-               (when (verify-repair client)
-                 (mark-fixed (client-name client)))
-               (sleep 30)))
-           (return)))))
-
-(defun monitor-fix (client)
-  (with-slots (name) client
-    ))
+       while (> (length monitored) 0)
+       do (progn
+            (dolist (client monitored)
+              (when (verify-repair client)
+               (mark-fixed (client-name client))
+               (log-message :info "Se reparó el cliente ~s" (client-name client))
+               (setf monitored (remove client monitored))))
+            (sleep 30)))))
 
 (defun exclude-inactive-clients (clients)
   ;; Guardar en un archivo la lista de clientes inactivos y remover el
@@ -211,5 +208,5 @@ el proceso FixCliente en el equipo remoto."
         (mark-unrepaired name)))))
 
 (defun append-new-client (client-name)
-  (log-message :info "Agregando el equipo ~s actualmente en cola para procesar" client-name)
+  (log-message :info "Agregando ~s actualmente en cola para procesar" client-name)
   (add-client client-name))

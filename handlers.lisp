@@ -24,7 +24,8 @@ regular REGEX."
   (unless (null client)
     (case (request-method*)
       (:get (redirect #u/clients/{client}))
-      (:post (append-to-queue (escape-for-html client) *fix-manager*)
+      (:post (append-to-queue (escape-for-html
+                               (string-trim '(#\Space #\Newline) client)) *fix-manager*)
              (redirect #u/clients))))
   
   ;; Mostrar una lista con el estado de los clientes que faltan reparar.
