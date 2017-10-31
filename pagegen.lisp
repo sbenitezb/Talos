@@ -129,7 +129,8 @@
       (:link :rel "stylesheet" :type "text/css" :href "/static/talos.css"))
      (:body
       (:ul :id "header"
-           (:li "Taλos")
+           (:li (fmt "Taλos v~a"
+                        (asdf:component-version (asdf:find-system 'talos))))
            (:li (:a :href "/" "Inicio"))
            (:li (:a :href "/clients" "Equipos pendientes de verificación"))
            (:li (:a :href "/fixes" "Listado de reparaciones"))
