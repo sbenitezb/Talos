@@ -68,3 +68,7 @@
 (defun resolve (hostname)
   #+ccl
   (ccl:lookup-hostname hostname))
+
+(defun dotted-ipv4 (hostname)
+  #+ccl
+  (ccl:ipaddr-to-dotted (resolve hostname)))

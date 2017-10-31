@@ -4,7 +4,7 @@
   :serial t
   :description "Control de reparación de clientes ConfigMgr"
   :author "Sebastián Benítez <sebenitez@trabajo.gob.ar>"
-  :version "1.2.1"
+  :version "1.2.2"
   :license "MIT"
   :depends-on (#:hunchentoot
                #:cl-who
@@ -20,6 +20,7 @@
                #:cffi)
   :components ((:file "package")
                (:file "macros")
+               (:file "util")
                (:file "config")
                (:file "database")
                (:file "auth")

@@ -1,6 +1,6 @@
 (in-package #:talos)
 
-(defvar *initial-wait* 2) ;; Tiempo de espera inicial en minutos
+(defparameter *initial-wait* 2) ;; Tiempo de espera inicial en minutos
 (defvar *log-parser-regex* (ppcre:create-scanner "([a-zA-Z]{3} [a-zA-Z]{3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} UTC.{4,6} \\d{4}: \\* Finalizado con código:) ([-0123456789]{1,2}) (.*)"))
 
 (defclass fix-manager ()
@@ -29,6 +29,7 @@
         (setf monitor nil)))))
 
 (defmethod append-to-queue ((client-name string) (manager fix-manager))
+  "Agrega un cliente a la cola de procesamiento"
   (push client-name (slot-value manager 'pending-queue)))
 
 (defun schedule-client-fixes (manager)
@@ -64,14 +65,18 @@
      (sleep (* (fix-manager-fixing-interval manager) 60))))
 
 (defun prepare-batch (batch manager)
-  (multiple-value-bind (inactive active reachable unreachable)
+  (multiple-value-bind (noresolve central interior inactive active reachable unreachable)
       (filter-batch batch)
+    ;; Excluye clientes que no son de Edificios Centrales
+    (exclude-inactive-clients interior)
+    
     ;; Excluye clientes inactivos de la base y los agrega en el archivo
     ;; disabled.txt en la carpeta privada del programa.
     (exclude-inactive-clients inactive)
 
     ;; Marca en la base los equipos que no resuelven IP o no responden
     ;; al ping.
+    (mark-unreachable-clients noresolve)
     (mark-unreachable-clients unreachable)
 
     ;; Marca en la base los equipos accesibles como no reparadoss
@@ -80,13 +85,19 @@
 
 (defun filter-batch (batch)
   (log-message :debug "Filtrando clientes inactivos o inaccesibles")
-  (let* ((active (remove-if #'client-disabled-p batch))
-         (inactive (remove-if (complement #'client-disabled-p) batch))
-         (reachable (remove-if (complement #'client-reachable-p) active))
-         (unreachable (remove-if #'client-reachable-p active)))
+  (let (resolve noresolve central interior inactive active reachable unreachable)
+    (multiple-value-setq (resolve noresolve)
+        (partition-if #'client-resolves-p batch))
+    (multiple-value-setq (central interior)
+      (partition-if #'client-central-p resolve))
+    (multiple-value-setq (inactive active)
+      (partition-if #'client-disabled-p central))
+    (multiple-value-setq (reachable unreachable)
+      (partition-if #'client-reachable-p active))
+      
     (log-message :debug "En este lote: ~d inactivos, ~d activos, ~d accesibles"
                  (length inactive) (length active) (length reachable))
-    (values inactive active reachable unreachable)))
+    (values noresolve central interior inactive active reachable unreachable)))
 
 (defun process-batch (batch manager)
   (when (> (length batch) 0)
@@ -95,8 +106,11 @@
     ;; Monitorea el proceso de reparación en un thread aparte por cada batch
     (with-accessors ((lock fix-manager-lock) (monitors fix-manager-monitors)) manager
       (ccl:with-lock-grabbed (lock)
-        (push (ccl:process-run-function 'batch-monitor #'monitor-fixes batch)
-              monitors)))))
+        (push (ccl:process-run-function 'batch-monitor #'monitor-fixes batch))))))
+
+(defun client-resolves-p (client)
+  "Verifica si el cliente resuelve IP"
+  (resolve (client-name client)))
 
 (defun client-reachable-p (client)
   "Verifica si el cliente responde al ping"
@@ -119,6 +133,10 @@
       ;; Si dsquery no encuentra un equipo con este nombre y deshabilitado, la
       ;; salida es nula.
       (> (length (dsquery name)) 0))))
+
+(defun client-central-p (client)
+  "Verifica si la IPv4 del cliente comienza con 192.168."
+  (search "192.168." (dotted-ipv4 (client-name client))))
 
 (defun fix-client (client)
   "Mata procesos en ejecución que interfieren con FixCliente y finalmente lanza
