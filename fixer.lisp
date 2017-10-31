@@ -106,7 +106,8 @@
     ;; Monitorea el proceso de reparación en un thread aparte por cada batch
     (with-accessors ((lock fix-manager-lock) (monitors fix-manager-monitors)) manager
       (ccl:with-lock-grabbed (lock)
-        (push (ccl:process-run-function 'batch-monitor #'monitor-fixes batch))))))
+        (push (ccl:process-run-function 'batch-monitor #'monitor-fixes batch)
+              monitors)))))
 
 (defun client-resolves-p (client)
   "Verifica si el cliente resuelve IP"
