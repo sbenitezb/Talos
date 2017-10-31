@@ -1,7 +1,7 @@
 (in-package #:talos)
 
 (defparameter *initial-wait* 2) ;; Tiempo de espera inicial en minutos
-(defvar *log-parser-regex* (ppcre:create-scanner "([a-zA-Z]{3} [a-zA-Z]{3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} UTC.{4,6} \\d{4}: \\* Finalizado con código:) ([-0123456789]{1,2}) (.*)"))
+(defvar *log-parser-regex* (ppcre:create-scanner "(.*) (Reparación exitosa)(.*)"))
 
 (defclass fix-manager ()
   ((batch-size :initarg :batch-size :reader fix-manager-batch-size)
@@ -179,9 +179,7 @@ el proceso FixCliente en el equipo remoto."
       (when s
         ;; Lee todas las líneas del log, pero solo escanea la última
         (let ((lines (loop for line = (read-line s nil) while line collect line)))
-          (ppcre:register-groups-bind (preamble code descr)
-              (*log-parser-regex* (first (reverse lines)))
-            (string= "0" code)))))))
+          (ppcre:scan *log-parser-regex* (first (reverse lines))))))))
 
 (defun monitor-fixes (batch)
   "Monitorea el proceso de reparación"
