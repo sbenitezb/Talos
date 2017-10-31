@@ -9,7 +9,7 @@
    (thread :reader fix-manager-thread :initform (ccl:make-process 'fix-manager))
    (lock :accessor fix-manager-lock :initform (ccl:make-lock))
    (monitors :accessor fix-manager-monitors :initform '())
-   (pending-queue :initform '()))
+   (pending-queue :reader fix-manager-pending-queue :initform '()))
   (:default-initargs
    :batch-size 10
     :fixing-interval 30))

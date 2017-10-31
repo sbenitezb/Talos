@@ -106,6 +106,18 @@
 (defun render-stats ()
   (with-html-output-to-string (s)))
 
+(defun render-queue (uri queue)
+  (with-html-output-to-string (s)
+    (:table :id "queue" :cellspacing "0"
+            (:caption "Equipos en cola pendiente de procesamiento")
+            (:thead
+             (:tr
+              (:th "Equipo")))
+            (:tbody
+             (dolist (client-name queue)
+               (htm (:tr
+                     (:td (str client-name)))))))))
+
 (defun render-page (parts)
   (with-html-output-to-string (s nil :prologue t)
     (:html
@@ -121,6 +133,7 @@
            (:li (:a :href "/" "Inicio"))
            (:li (:a :href "/clients" "Equipos pendientes de verificación"))
            (:li (:a :href "/fixes" "Listado de reparaciones"))
+           (:li (:a :href "/queue" "Equipos en cola"))
            (:li (:a :href "/stats" "Estadísticas")))
       (:div :id "content"
             (fmt "~{~A~}" (mapcar #'funcall parts)))))))

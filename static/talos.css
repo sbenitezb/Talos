@@ -122,6 +122,12 @@ h1 + h2, h2 + h3, h3 + h4, h4 + h5, h5 + h6 {
 
 #fixes td { text-align: center; }
 
+#queue {
+    min-width: 20em;
+}
+
+#queue td { text-align: center; }
+
 #paging {
    font-size: 85%;
    padding: 0;

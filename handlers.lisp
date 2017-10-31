@@ -77,3 +77,8 @@ regular REGEX."
 ;;; Define un handler para la ruta que genera estadísticas.
 (define-easy-handler (handle-stats :uri "/stats" :default-request-type :get) ()
   (render-page (list #'(lambda () (render-stats)))))
+
+;;; Define un handler para mostrar equipos encolados para próxima revisión.
+(define-easy-handler (handle-queue :uri "/queue" :default-request-type :get) ()
+  (let ((queue (fix-manager-pending-queue *fix-manager*)))
+    (render-page (list #'(lambda () (render-queue #u/queue queue))))))
