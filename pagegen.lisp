@@ -56,10 +56,7 @@
                         (decode-universal-time last-seen)
                       (fmt "~4,'0D-~2,'0D-~2,'0D ~2,'0D:~2,'0D:~2,'0D"
                            year month date hr min snd)))
-                   (:td (str (if reachable "Sí" "No")))
-                   (:td :class "action-link"
-                        (:a :href #u/clients/{name}/mark-fixed
-                            (str "Marcar como arreglado")))))))))))
+                   (:td (str (if reachable "Sí" "No")))))))))))
 
 (defun render-home ()
   (with-html-output-to-string (s)
@@ -70,6 +67,9 @@
 
 (defun render-fixes (uri client fixes)
   (with-html-output-to-string (s)
+    (:ul :id "client-menu"
+     (:li (:a :href #u{client}/mark-obsolete (str "Marcar como obsoleto")))
+     (:li (:a :href #u{client}/mark-fixed (str "Marcar como arreglado"))))
     (:table :id "fixes" :cellspacing "0"
             (:caption  (str #?"Reparaciones para el equipo $(client)"))
             (:tbody

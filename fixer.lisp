@@ -1,7 +1,7 @@
 (in-package #:talos)
 
 (defparameter *initial-wait* 2) ;; Tiempo de espera inicial en minutos
-(defvar *log-parser-regex* (ppcre:create-scanner "([a-zA-Z]{3} [a-zA-Z]{3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} UTC.{4,6} \\d{4}: \\* Finalizado con código:) ([-0123456789]{1,2}) (.*)"))
+(defconstant +log-parser-regex+ (ppcre:create-scanner "([a-zA-Z]{3} [a-zA-Z]{3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} UTC.{4,6} \\d{4}: \\* Finalizado con código:) ([-0123456789]{1,2}) (.*)"))
 
 (defclass fix-manager ()
   ((batch-size :initarg :batch-size :reader fix-manager-batch-size)
@@ -86,14 +86,14 @@
 (defun filter-batch (batch)
   (log-message :debug "Filtrando clientes inactivos o inaccesibles")
   (let (resolve noresolve central interior inactive active reachable unreachable)
+    (multiple-value-setq (inactive active)
+      (partition-if #'client-disabled-p batch))
     (multiple-value-setq (resolve noresolve)
-        (partition-if #'client-resolves-p batch))
+      (partition-if #'client-resolves-p active))
     (multiple-value-setq (central interior)
       (partition-if #'client-central-p resolve))
-    (multiple-value-setq (inactive active)
-      (partition-if #'client-disabled-p central))
     (multiple-value-setq (reachable unreachable)
-      (partition-if #'client-reachable-p active))
+      (partition-if #'client-reachable-p central))
       
     (log-message :debug "En este lote: ~d inactivos, ~d activos, ~d accesibles"
                  (length inactive) (length active) (length reachable))
@@ -180,7 +180,7 @@ el proceso FixCliente en el equipo remoto."
         ;; Lee todas las líneas del log, pero solo escanea la última
         (let ((lines (loop for line = (read-line s nil) while line collect line)))
           (ppcre:register-groups-bind (preamble code descr)
-              (*log-parser-regex* (first (reverse lines)))
+              (+log-parser-regex+ (first (reverse lines)))
             (string= "0" code)))))))
 
 (defun monitor-fixes (batch)
@@ -190,12 +190,12 @@ el proceso FixCliente en el equipo remoto."
     (loop
        while (> (length monitored) 0)
        do (progn
+            (sleep 30)
             (dolist (client monitored)
               (when (verify-repair client)
                (mark-fixed (client-name client))
                (log-message :info "Se reparó el cliente ~s" (client-name client))
-               (setf monitored (remove client monitored))))
-            (sleep 30)))))
+               (setf monitored (remove client monitored))))))))
 
 (defun exclude-inactive-clients (clients)
   ;; Guardar en un archivo la lista de clientes inactivos y remover el
