@@ -4,7 +4,7 @@
            (loop for line = (read-line s nil)
                 while line
               doing
-                (format t "~s~%" line)
+                (format t "~a~%" line)
                 (drakma:http-request "http://127.0.0.1:9090/clients"
                                      :method :post
                                      :form-data t

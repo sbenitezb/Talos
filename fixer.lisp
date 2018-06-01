@@ -31,7 +31,7 @@
 (defmethod append-to-queue ((client-name string) (manager fix-manager))
   "Agrega un cliente a la cola de procesamiento"
   (push client-name (slot-value manager 'pending-queue)))
-
+  
 (defun schedule-client-fixes (manager)
   (log-message :info "Esperando ~d minutos para comenzar a procesar" *initial-wait*)
   (sleep (* 60 *initial-wait*))
@@ -42,7 +42,7 @@
          (cancel-monitors manager)))
 
      ;; Agregar los equipos de la cola pendiente para revisión en este intervalo
-     (mapc #'append-new-client (slot-value manager 'pending-queue))
+     (map nil #'append-new-client (slot-value manager 'pending-queue))
      ;; Drenar la cola de pendientes
      (setf (slot-value manager 'pending-queue) '())
      
@@ -59,7 +59,7 @@
          (log-message :info "Procesando ~d lotes de ~d unidades"
                       (length batches) batch-size)
          ;; Procesar lotes
-         (mapc #'(lambda (b) (prepare-batch b manager)) batches)))
+         (map nil #'(lambda (b) (prepare-batch b manager)) batches)))
      (log-message :info "Esperando el próximo intervalo de ~d minutos"
                   (fix-manager-fixing-interval manager))
      (sleep (* (fix-manager-fixing-interval manager) 60))))
@@ -102,7 +102,7 @@
 (defun process-batch (batch manager)
   (when (> (length batch) 0)
     (log-message :info "Procesando lote (~d clientes)" (length batch))
-    (mapc #'fix-client batch)
+    (map nil #'fix-client batch)
     ;; Monitorea el proceso de reparación en un thread aparte por cada batch
     (with-accessors ((lock fix-manager-lock) (monitors fix-manager-monitors)) manager
       (ccl:with-lock-grabbed (lock)
@@ -122,7 +122,7 @@
   "Verifica si el cliente está inhabilitado en AD"
   (flet ((dsquery (name)
            (with-output-to-string (stream)
-             (let ((proc (ccl:run-program "dsquery"
+             (let ((proc (ccl:run-program "C:\\Windows\\SysWOW64\\dsquery.exe"
                                           (list "computer" "-name" (coerce name 'simple-string) "-disabled" "-q")
                                           :output stream)))
                (multiple-value-bind (status code)
@@ -155,6 +155,10 @@ el proceso FixCliente en el equipo remoto."
         (log-message :debug "Procesando cliente ~a" name)
         (ccl:run-program pskill (build-params ("cscript.exe")))
         (ccl:run-program pskill (build-params ("FixCliente.exe")))
+        (ccl:run-program pskill (build-params ("gpupdate.exe")))
+        (ccl:run-program pskill (build-params ("ccmsetup.exe")))
+        (ccl:run-program pskill (build-params ("ccmexec.exe")))
+        (ccl:run-program pskill (build-params ("ccmrepair.exe")))
         (ccl:run-program psexec (build-params ("-s" "-d" "-f" "-c" fixclient))
                          :wait nil)))))
 

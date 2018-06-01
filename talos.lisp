@@ -78,7 +78,7 @@ devuelvan siempre un error."
 (defun init (port)
   (ensure-directories-exist (private-folder))
   (setup-logger)
-  (log-message :notice "Talos server v~a (C) 2011-2017 ~a"
+  (log-message :notice "Talos server v~a (C) 2011-2018 ~a"
                (asdf:component-version (asdf:find-system 'talos))
                (asdf:system-author (asdf:find-system 'talos)))
   (reload-config)
@@ -119,5 +119,10 @@ devuelvan siempre un error."
 (defun main (&key (port 9090))
   (case (init port)
     (:abort (quit 1))
-    (otherwise)))
+    (otherwise))
+  (loop doing (format t ">>> Escriba :quit para terminar~%")
+     while (not (search ":quit" (read-line)))))
     
+
+(defun save-application ()
+  (ccl:save-application #P"talos.image" :toplevel-function #'talos:main))

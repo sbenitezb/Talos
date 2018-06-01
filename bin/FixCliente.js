@@ -29,6 +29,17 @@ function Exit(code, desc) {
     WScript.Quit(code);
 }
 
+function ConfigureRemoteRegistry() {
+	Log(logf, "* Configurando registro remoto");
+	shell.Run("sc.exe config RemoteRegistry start=auto");
+	shell.Run("sc.exe start RemoteRegistry");
+}
+
+function EnableRemoting() {
+	Log(logf, "* Configurando acceso remoto");
+	shell.Run("winrm quickconfig -quiet -force");
+}
+
 function FixPolicy() {
     Log(logf, "* Reseteando group policy");
     var policyPath = system32 + "\\GroupPolicy\\Machine";
@@ -95,30 +106,15 @@ function FixWMI () {
     shell.Run("sc config winmgmt start= disabled", 0, true);
     shell.Run("net stop winmgmt /y", 0, true);
     shell.Run("winmgmt /kill", 0, true);
-    if (winver == "5.1") {
-        // Windows XP
-        Log(logf, "  + Eliminando repositorio");
-        try {
-            if (fso.FolderExists(system32 + "\\wbem\\Repository")) {
-                var today = new Date();
-                fso.MoveFolder(system32 + "\\wbem\\Repository", system32 + "\\wbem\\Repository-" + today);
-                fso.DeleteFolder(system32 + "\\wbem\\Repository-" + today, true);
-            }
-        } catch (e) {
-            Log(logf, "  !! No se pudo eliminar el repositorio");
-        }
-        
-        RegisterLibraries();
-        CompileMOF();
-    } else {
-        // Windows 7
-        Log(logf, "  + Recuperando repositorio");
-        shell.Run("sc config winmgmt start= auto", 0, true);
-        shell.Run("winmgmt /standalonehost", 0, true);
-        shell.Run("winmgmt /resetrepository", 0, true);
-        RegisterLibraries();
-        CompileMOF();
-    }
+
+    // Windows 7
+    Log(logf, "  + Recuperando repositorio");
+    shell.Run("sc config winmgmt start= auto", 0, true);
+    shell.Run("winmgmt /standalonehost", 0, true);
+    shell.Run("winmgmt /resetrepository", 0, true);
+    RegisterLibraries();
+    CompileMOF();
+
     shell.Run("sc config winmgmt start= auto", 0, true);
     shell.Run("net start winmgmt", 0, true);
     WScript.Sleep(60000);
@@ -146,15 +142,22 @@ function UninstallClient () {
     Log(logf, "  + Desinstalando cliente");
     var counter = 1;
     do {
-        if (fso.FileExists(system32 + "\\ccmsetup\\ccmsetup.exe")) {
-            shell.Run(system32 + "\\ccmsetup\\ccmsetup.exe /uninstall", 0, true);
-        } else if (fso.FileExists(ccmsetupdir + "\\ccmsetup.exe")) {
-            shell.Run(ccmsetupdir + "\\ccmsetup.exe /uninstall", 0, true);
-        } else {
-            // No existe el instalador del cliente, se intenta desinstalación por instalador en red
-            shell.Run("\\\\trabajo\\netlogon\\clientesms\\ccmsetup.exe /uninstall", 0, true);
-        }
-        WScript.Sleep(180000);
+    	// Si el contador llegó a 0 es porque se intentó desinstalar usando el ccmsetup local.
+    	// Esta vez se intenta usando el que está en el share.
+    	if (counter == 0) {
+            shell.Run("\\\\trabajo\\netlogon\\clientesms\\ccmsetup.exe /uninstall", 0, true);    		
+    	} else {
+	        if (fso.FileExists(system32 + "\\ccmsetup\\ccmsetup.exe")) {
+	            shell.Run(system32 + "\\ccmsetup\\ccmsetup.exe /uninstall", 0, true);
+	        } else if (fso.FileExists(ccmsetupdir + "\\ccmsetup.exe")) {
+	            shell.Run(ccmsetupdir + "\\ccmsetup.exe /uninstall", 0, true);
+	        } else {
+	            // No existe el instalador del cliente, se intenta desinstalación por instalador en red
+	            shell.Run("\\\\trabajo\\netlogon\\clientesms\\ccmsetup.exe /uninstall", 0, true);
+	        }    		
+    	}
+
+        WScript.Sleep(300000);
 
         // Chequear si se desinstaló el cliente
         var col = wmi.ExecQuery("select * from Win32_Product where Name = \"Configuration Manager Client\"",
@@ -182,6 +185,17 @@ function DeleteCCMNamespace() {
     }
 }
 
+function RemoveCertificates() {
+	Log(logf, "* Eliminando certificados");
+	if (fso.FileExists(system32 + "\\SMSCFG.ini")) {
+		try {
+			fso.DeleteFile(system32 + "\\SMSCFG.ini", true);
+		} catch (e) {
+			Log(logf, " !! No se pudo eliminar SMSCFG.ini");
+		}
+	}
+}
+
 function InstallClient () {
     Log(logf, "* Instalando cliente");
 
@@ -207,8 +221,8 @@ function InstallClient () {
     }
 
     Log(logf, "  + Ejecutando instalador");
-    shell.Run("\\\\trabajo\\netlogon\\clientesms\\ccmsetup.exe SMSSITECODE=AUTO SMSCACHESIZE=10240", 0, true);
-    WScript.Sleep(720000);
+    shell.Run("\\\\trabajo\\netlogon\\clientesms\\ccmsetup.exe SMSSITECODE=AUTO SMSCACHESIZE=16240 /UsePKICert", 0, true);
+    WScript.Sleep(900000);
     // Chequear si se instaló el cliente
     var col = wmi.ExecQuery("select * from Win32_Product where Name = \"Configuration Manager Client\"",
                              "WQL", wbemFlagForwardOnly | wbemFlagReturnWhenComplete);
@@ -230,15 +244,21 @@ shell.Run("net time /set /yes", 0, true);
 Log(logf, "* Matando ccmexec.exe, ccmsetup.exe y ccmrepair.exe");
 shell.Run("net stop ccmsetup /y", 0, true);
 shell.Run("net stop ccmexec /y", 0, true);
+shell.Run("net stop SCCMHealthWMI /y", 0, true);
 shell.Run("pskill.exe -t ccmexec.exe", 0, true);
 shell.Run("pskill.exe -t ccmsetup.exe", 0, true);
 shell.Run("pskill.exe -t ccmrepair.exe", 0, true);
+shell.Run("pskill.exe -t gpupdate.exe", 0, true);
+shell.Run("pskill.exe -t SCCMHealth", 0, true);
 
+ConfigureRemoteRegistry();
+EnableRemoting();
 FixPolicy();
 FixMSI();
 FixWMI();
 UninstallClient();
 DeleteCCMNamespace();
+//RemoveCertificates();
 InstallClient();
 
 Exit(0, "Reparación correcta");

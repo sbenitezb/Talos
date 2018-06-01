@@ -33,7 +33,7 @@ UserQuietInstCmd=
 FILE0="FixCliente.js"
 FILE1="pskill.exe"
 [SourceFiles]
-SourceFiles0=S:\scripts\Fix Cliente\
+SourceFiles0=S:\cl\talos\bin\
 [SourceFiles0]
 %FILE0%=
 %FILE1%=
