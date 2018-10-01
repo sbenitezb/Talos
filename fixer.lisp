@@ -2,6 +2,7 @@
 
 (defparameter *initial-wait* 2) ;; Tiempo de espera inicial en minutos
 (defconstant +log-parser-regex+ (ppcre:create-scanner "([a-zA-Z]{3} [a-zA-Z]{3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} UTC.{4,6} \\d{4}: \\* Finalizado con código:) ([-0123456789]{1,2}) (.*)"))
+;;(defconstant +log-parser-regex+ (ppcre:create-scanner ".*Reparación exitosa.*)"))
 
 (defclass fix-manager ()
   ((batch-size :initarg :batch-size :reader fix-manager-batch-size)
@@ -153,6 +154,7 @@ el proceso FixCliente en el equipo remoto."
             (psexec (build-exepath "psexec.exe"))
             (fixclient (build-exepath "FixCliente.exe")))
         (log-message :debug "Procesando cliente ~a" name)
+        (ccl:run-program pskill (build-params ("wscript.exe")))
         (ccl:run-program pskill (build-params ("cscript.exe")))
         (ccl:run-program pskill (build-params ("FixCliente.exe")))
         (ccl:run-program pskill (build-params ("gpupdate.exe")))

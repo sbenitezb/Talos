@@ -254,7 +254,6 @@ shell.Run("pskill.exe -t SCCMHealth", 0, true);
 ConfigureRemoteRegistry();
 EnableRemoting();
 FixPolicy();
-FixMSI();
 FixWMI();
 UninstallClient();
 DeleteCCMNamespace();
