@@ -5,12 +5,24 @@
 ;;(defconstant +log-parser-regex+ (ppcre:create-scanner ".*Reparación exitosa.*)"))
 
 (defclass fix-manager ()
-  ((batch-size :initarg :batch-size :reader fix-manager-batch-size)
-   (fixing-interval :initarg :fixing-interval :accessor fix-manager-fixing-interval)
-   (thread :reader fix-manager-thread :initform (ccl:make-process 'fix-manager))
-   (lock :accessor fix-manager-lock :initform (ccl:make-lock))
-   (monitors :accessor fix-manager-monitors :initform '())
-   (pending-queue :reader fix-manager-pending-queue :initform '()))
+  ((batch-size
+    :initarg :batch-size
+    :reader fix-manager-batch-size)
+   (fixing-interval
+    :initarg :fixing-interval
+    :accessor fix-manager-fixing-interval)
+   (thread
+    :reader fix-manager-thread
+    :initform (ccl:make-process 'fix-manager))
+   (lock
+    :accessor fix-manager-lock
+    :initform (ccl:make-lock))
+   (monitors
+    :accessor fix-manager-monitors
+    :initform '())
+   (pending-queue
+    :reader fix-manager-pending-queue
+    :initform '()))
   (:default-initargs
    :batch-size 10
     :fixing-interval 30))
@@ -73,7 +85,13 @@
     
     ;; Excluye clientes inactivos de la base y los agrega en el archivo
     ;; disabled.txt en la carpeta privada del programa.
-    (exclude-inactive-clients inactive)
+    ;; Nota: solo se realiza en el horario de 9 a 18, ya que fuera de este horario
+    ;; el DNS del Ministerio (ahora Secretaría) pareciera perder información del
+    ;; cliente.
+    (multiple-value-bind (ss mm hh d m y x1 x2 x3)
+        (get-decoded-time)
+      (when (and (>= hh 9) (<= hh 17))
+        (exclude-inactive-clients inactive)))
 
     ;; Marca en la base los equipos que no resuelven IP o no responden
     ;; al ping.
