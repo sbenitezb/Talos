@@ -120,8 +120,9 @@ devuelvan siempre un error."
   (case (init port)
     (:abort (quit 1))
     (otherwise))
-  (loop doing (format t ">>> Escriba :quit para terminar~%")
-     while (not (search ":quit" (read-line)))))
+  (unless (member :swank *features*)
+    (loop doing (format t ">>> Escriba :quit para terminar~%")
+       while (not (search ":quit" (read-line))))))
     
 
 (defun save-application ()
